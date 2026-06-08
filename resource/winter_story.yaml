@@ -1,0 +1,11 @@
+winter_forest:
+  - style: "A magical winter illustration with contrasting colors of"
+    subject: "a brave girl and her fox companion wandering the snow"
+    settings:
+      - "the fox leads her through the shadows of the trees"
+      - "a quiet stillness blankets the frozen forest"
+      - "the sun rises slowly over the frosted hills"
+      - "the girl rests against the trunk of a frosty pine"
+      - "the snow catches the pale morning light"
+      - "the girl tosses a stick into the snow"
+    concept_token: ["girl", "fox"]

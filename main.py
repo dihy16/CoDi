@@ -1,5 +1,6 @@
 import argparse
 import os
+import yaml
 from codi_utils import load_pipeline, create_latents, create_token_indices, OptimalTransport
 from utils.general_utils import *
 import torch
@@ -95,29 +96,63 @@ if __name__ == '__main__':
     parser.add_argument('--alpha', type=float, default=0.5, required=False)
     parser.add_argument('--root_dir', default="./result",type=str, required=False)
     args = parser.parse_args()
-    
-    story_pipeline = load_pipeline(args.gpu)
-    identity_prompt=f'{args.style} {args.subject}'
 
-    save_dir=os.path.join(args.root_dir,str(time.time()))
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    prompts=[]
-    prompts.append(identity_prompt)
-    
-    for setting in args.settings:
-        prompts.append(f'{args.style} {args.subject} {setting}')
-    images=CoDi_generation(args,story_pipeline,prompts,args.concept_token,args.seed)
-    
-    story_images=[]
-    visual_prompts="Identity Prompt:"
-    for i in range(len(images)):
-        visual_prompts+=f"{prompts[i]}" if i ==0 else f" t{i}:{prompts[i]}".replace(identity_prompt,"")
-        if i!=0:
-            images[i].save(f"{os.path.join(save_dir,prompts[i])}.jpg")
-            story_images.append(np.array(images[i]))
-    concatenated_image = np.concatenate(story_images, axis=1)
-    concatenated_image1=text_under_image(concatenated_image,visual_prompts,font_scale=2.1,add_h=0.1)
-    img=Image.fromarray(concatenated_image1)
-    img.save(f"{os.path.join(save_dir,'story')}.jpg")
+    # If a prompt file (YAML) is provided, behave like gen_benchmark.py and
+    # iterate all instances from the YAML. Otherwise use CLI flags as before.
+    if args.prompt_file:
+        with open(os.path.expanduser(args.prompt_file), 'r') as f:
+            data = yaml.safe_load(f)
+
+        for subject_domain, subject_instances in data.items():
+            for index, instance in enumerate(subject_instances):
+                story_pipeline = load_pipeline(args.gpu)
+                identity_prompt = f"{instance['style']} {instance['subject']}"
+                save_dir = os.path.join(args.root_dir, f"{subject_domain}_{index}")
+                if not os.path.exists(save_dir):
+                    os.makedirs(save_dir)
+
+                prompts = [identity_prompt]
+                for setting in instance.get('settings', []):
+                    prompts.append(f"{instance['style']} {instance['subject']} {setting}")
+
+                images = CoDi_generation(args, story_pipeline, prompts, instance.get('concept_token', args.concept_token), args.seed)
+
+                story_images = []
+                visual_prompts = "Identity Prompt:"
+                for i in range(len(images)):
+                    visual_prompts += f"{prompts[i]}" if i == 0 else f" t{i}:{prompts[i]}".replace(identity_prompt, "")
+                    if i != 0:
+                        images[i].save(f"{os.path.join(save_dir, prompts[i])}.jpg")
+                        story_images.append(np.array(images[i]))
+
+                concatenated_image = np.concatenate(story_images, axis=1)
+                concatenated_image1 = text_under_image(concatenated_image, visual_prompts, font_scale=2.1, add_h=0.1)
+                img = Image.fromarray(concatenated_image1)
+                img.save(f"{os.path.join(save_dir, 'story')}.jpg")
+
+    else:
+        story_pipeline = load_pipeline(args.gpu)
+        identity_prompt=f'{args.style} {args.subject}'
+
+        save_dir=os.path.join(args.root_dir,str(time.time()))
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        prompts=[]
+        prompts.append(identity_prompt)
+
+        for setting in args.settings:
+            prompts.append(f'{args.style} {args.subject} {setting}')
+        images=CoDi_generation(args,story_pipeline,prompts,args.concept_token,args.seed)
+
+        story_images=[]
+        visual_prompts="Identity Prompt:"
+        for i in range(len(images)):
+            visual_prompts+=f"{prompts[i]}" if i ==0 else f" t{i}:{prompts[i]}".replace(identity_prompt,"")
+            if i!=0:
+                images[i].save(f"{os.path.join(save_dir,prompts[i])}.jpg")
+                story_images.append(np.array(images[i]))
+        concatenated_image = np.concatenate(story_images, axis=1)
+        concatenated_image1=text_under_image(concatenated_image,visual_prompts,font_scale=2.1,add_h=0.1)
+        img=Image.fromarray(concatenated_image1)
+        img.save(f"{os.path.join(save_dir,'story')}.jpg")
 
