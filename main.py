@@ -1,6 +1,7 @@
 import argparse
 import os
 import yaml
+import random
 from codi_utils import load_pipeline, create_latents, create_token_indices, OptimalTransport
 from utils.general_utils import *
 import torch
@@ -82,7 +83,7 @@ def CoDi_generation(args,story_pipeline, prompts, concept_token,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', default=0, type=int, required=False)
-    parser.add_argument('--seed', default=40, type=int, required=False)
+    parser.add_argument('--seed', default=-1, type=int, required=False, help='If -1 (default) use random seed per instance')
     parser.add_argument('--same_latent', default=False, type=bool, required=False, help="different latent to ensure different pose")
     parser.add_argument('--style', default="A 3D animation of", type=str, required=False)
     parser.add_argument('--subject', default="A happy hedgehog", type=str, required=False)
@@ -112,6 +113,7 @@ if __name__ == '__main__':
         else:
             items = data.items()
 
+
         for subject_domain, subject_instances in items:
             for index, instance in enumerate(subject_instances):
                 story_pipeline = load_pipeline(args.gpu)
@@ -124,7 +126,13 @@ if __name__ == '__main__':
                 for setting in instance.get('settings', []):
                     prompts.append(f"{instance['style']} {instance['subject']} {setting}")
 
-                images = CoDi_generation(args, story_pipeline, prompts, instance.get('concept_token', args.concept_token), args.seed)
+                # choose seed: use provided seed unless it's -1, then randomize per instance
+                if args.seed != -1:
+                    seed = args.seed
+                else:
+                    seed = random.randint(0, 2**32 - 1)
+
+                images = CoDi_generation(args, story_pipeline, prompts, instance.get('concept_token', args.concept_token), seed)
 
                 story_images = []
                 visual_prompts = "Identity Prompt:"
@@ -151,7 +159,13 @@ if __name__ == '__main__':
 
         for setting in args.settings:
             prompts.append(f'{args.style} {args.subject} {setting}')
-        images=CoDi_generation(args,story_pipeline,prompts,args.concept_token,args.seed)
+
+        if args.seed != -1:
+            seed = args.seed
+        else:
+            seed = random.randint(0, 2**32 - 1)
+
+        images=CoDi_generation(args,story_pipeline,prompts,args.concept_token,seed)
 
         story_images=[]
         visual_prompts="Identity Prompt:"
