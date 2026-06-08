@@ -92,6 +92,7 @@ if __name__ == '__main__':
                                                "wearing a small collar", "dressed in a festive outfit",
                                                "wearing a flower crown"], 
                         type=str, nargs='*', required=False)
+    parser.add_argument('--prompt_file', default=None, type=str, required=False, help='YAML file with prompts (like resource/consistory+.yaml)')
     parser.add_argument('--transition_point', type=int, default=10, required=False)
     parser.add_argument('--alpha', type=float, default=0.5, required=False)
     parser.add_argument('--root_dir', default="./result",type=str, required=False)
