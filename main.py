@@ -104,7 +104,15 @@ if __name__ == '__main__':
         with open(os.path.expanduser(args.prompt_file), 'r') as f:
             data = yaml.safe_load(f)
 
-        for subject_domain, subject_instances in data.items():
+        # Support two YAML shapes:
+        # 1) mapping: { domain1: [ {style, subject, settings, ...}, ... ], ... }
+        # 2) list: [ {style, subject, settings, ...}, ... ]
+        if isinstance(data, list):
+            items = [(os.path.splitext(os.path.basename(args.prompt_file))[0], data)]
+        else:
+            items = data.items()
+
+        for subject_domain, subject_instances in items:
             for index, instance in enumerate(subject_instances):
                 story_pipeline = load_pipeline(args.gpu)
                 identity_prompt = f"{instance['style']} {instance['subject']}"
